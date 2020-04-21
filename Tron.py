@@ -119,17 +119,42 @@ def AfficheScore(Game):
 #
 # gestion du joueur IA
 
-# VOTRE CODE ICI 
+# VOTRE CODE ICI
+
+def Moves_available(Game, x, y):
+    pos_moves = []
+    if Game.Grille[x - 1, y] == 0:
+        pos_moves.append((-1, 0))
+    if Game.Grille[x + 1, y] == 0:
+        pos_moves.append((1, 0))
+    if Game.Grille[x, y + 1] == 0:
+        pos_moves.append((0, 1))
+    print(pos_moves)
+
+def Move(direction, x, y):
+    if direction == "haut":
+        y += 1
+    if direction == "bas":
+        y -= 1
+    if direction == "droite":
+        x += 1
+    if direction == "gauche":
+        x -= 1
+    return [x, y]
 
 def Play(Game):   
-    
+
     x,y = Game.PlayerX, Game.PlayerY
     print(x,y)
 
     Game.Grille[x,y] = 2  # laisse la trace de la moto
 
-    y += 1  # on essaye de bouger vers le haut
-    
+    Moves_available(Game, x, y)
+    direction = ["haut", "bas", "gauche", "droite"]
+    next_move = Move(direction[random.randrange(3)], x, y)
+    #y += 1  # on essaye de bouger vers le haut
+    x = next_move[0]
+    y = next_move[1]
     v = Game.Grille[x,y]
     
     if v > 0 :
