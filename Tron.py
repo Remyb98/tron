@@ -1,32 +1,24 @@
 import tkinter as tk
-import random
 import numpy as np
-import copy 
+
+import random
+import copy
+
+import levels as lvl
 
 #################################################################################
 #
 #   Données de partie
 
-Data = [   [1,1,1,1,1,1,1,1,1,1,1,1,1],
-           [1,0,0,0,0,0,0,0,0,0,0,0,1],
-           [1,0,0,0,0,0,0,0,0,0,0,0,1],
-           [1,0,0,0,0,0,0,0,0,0,0,0,1],
-           [1,0,0,0,0,0,0,0,0,0,0,0,1],
-           [1,0,0,0,0,0,0,0,0,0,0,0,1],
-           [1,0,0,0,0,0,0,0,0,0,0,0,1],
-           [1,0,0,0,0,0,0,0,0,0,0,0,1],
-           [1,0,0,0,0,0,0,0,0,0,0,0,1],
-           [1,0,0,0,0,0,0,0,0,0,0,0,1],
-           [1,0,0,0,0,0,0,0,0,0,0,0,1],
-           [1,0,0,0,0,0,0,0,0,0,0,0,1],
-           [1,0,0,0,0,0,0,0,0,0,0,0,1],
-           [1,0,0,0,0,0,0,0,0,0,0,0,1],
-           [1,0,0,0,0,0,0,0,0,0,0,0,1],
-           [1,1,0,0,0,0,0,0,0,0,0,0,1],
-           [1,1,1,1,1,1,1,1,1,1,1,1,1] ]
+RANDOM_LEVEL = 0
 
-GInit  = np.array(Data,dtype=np.int8)
-GInit  = np.flip(GInit,0).transpose()
+if RANDOM_LEVEL:
+    level = lvl.get_random_level()
+else:
+    level = lvl.get_classic_level()
+
+GInit  = np.array(level, dtype=np.int8)
+GInit  = np.flip(GInit, 0).transpose()
 
 LARGEUR = 13
 HAUTEUR = 17
