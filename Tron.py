@@ -139,21 +139,12 @@ def Play(Game):
         new_pos =next_move[random.randrange(len(next_move))]
         x += new_pos[0]
         y += new_pos[1]
+        Game.PlayerX = x  # valide le déplacement
+        Game.PlayerY = y  # valide le déplacement
+        Game.Score += 1
+        return False  # la partie continue
     else:
         return True
-    #y += 1  # on essaye de bouger vers le haut
-
-    v = Game.Grille[x,y]
-    
-    if v > 0 :
-        # collision détectée
-        return True # partie terminée
-    else :
-       Game.PlayerX = x  # valide le déplacement
-       Game.PlayerY = y  # valide le déplacement
-       Game.Score += 1
-       return False   # la partie continue
-     
 
 ################################################################################
      
