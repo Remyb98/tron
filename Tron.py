@@ -135,11 +135,14 @@ def Play(Game):
     Game.Grille[x,y] = 2  # laisse la trace de la moto
 
     next_move = Moves_available(Game, x, y)
-    new_pos =next_move[random.randrange(len(next_move))]
-
+    if len(next_move):
+        new_pos =next_move[random.randrange(len(next_move))]
+        x += new_pos[0]
+        y += new_pos[1]
+    else:
+        return True
     #y += 1  # on essaye de bouger vers le haut
-    x += new_pos[0]
-    y += new_pos[1]
+
     v = Game.Grille[x,y]
     
     if v > 0 :
