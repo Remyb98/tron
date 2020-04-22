@@ -42,8 +42,8 @@ def display_grid(G, X, Y):
                 if G[i, x, y] == 2: c = 'O' # Trace
                 if (X[i], Y[i]) == (x, y): c = 'X' # Joueur
                 print(c, sep='', end='')
-                print(" ", sep='', end='') # Espace entre les grilles
-                print("") # Retour à la ligne
+            print(" ", sep='', end='') # Espace entre les grilles
+        print("") # Retour à la ligne
 
 
 ###########################################################
@@ -76,9 +76,9 @@ def simulate(game):
     # VOTRE CODE ICI
 
     while True:
-        if debug: print("X : ", X)
-        if debug: print("Y : ", Y)
-        if debug: print("S : ", S)
+        if debug: print("X :\t", X)
+        if debug: print("Y :\t", Y)
+        if debug: print("S :\t", S)
 
         # Marque le passage de la moto
         G[I, X, Y] = 2
@@ -89,8 +89,8 @@ def simulate(game):
         # DEPLACEMENT
         DX = dx[choice]
         DY = dy[choice]
-        if debug: print("DX : ", DX)
-        if debug: print("DY : ", DY)
+        if debug: print("DX :\t", DX)
+        if debug: print("DY :\t", DY)
         X += DX
         Y += DY
 
@@ -98,6 +98,6 @@ def simulate(game):
         if debug: display_grid(G, X, Y)
         if debug: time.sleep(2)
 
-        print("Scores : ", np.mean(S))
+        print("Scores :", np.mean(S))
 
 simulate(game_initial)
