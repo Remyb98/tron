@@ -6,11 +6,31 @@ import copy
 
 import levels as lvl
 
+import functools
+import time
+
+def get_time(accuracy=10):
+    """Decorateur pour connaitre le temps d execution
+    d une fonction
+    """
+    def decorator(function):
+        @functools.wraps(function)
+        def decorated(*args, **kwargs):
+            start = time.time()
+            value = function(*args, **kwargs)
+            timer = time.time() - start
+            print(f"function {function.__name__}:\t%.{accuracy}f seconds" % timer)
+            return value
+        return decorated
+    return decorator
+
 #################################################################################
 #
 #   Données de partie
 
 RANDOM_LEVEL = 0
+GAME_SPEED = 50
+NUMBER_SIMULATION = 10000
 
 if RANDOM_LEVEL:
     level = lvl.get_random_level()
@@ -105,6 +125,7 @@ def Affiche(Game):
 def AfficheScore(Game):
    info = "SCORE : " + str(Game.Score)
    canvas.create_text(80, 13,   font='Helvetica 12 bold', fill="yellow", text=info)
+   print(f"score:{Game.Score}")
 
 
 ###########################################################
@@ -149,7 +170,7 @@ def MonteCarlo(Game, nbParties, study_move):
 
 def ChooseMov(Game, next_moves):
     score_max = 0
-    nbParties = 100 #Nombre de simulation
+    nbParties = NUMBER_SIMULATION #Nombre de simulation
     best_move = ()
     for move in next_moves : #On parcout tous les movements possibles
         move_score = MonteCarlo(Game, nbParties, move) #On les étudie un à un 
@@ -169,6 +190,7 @@ def Actualise_game(Game, new_pos, x, y):
     return Game
 
 
+@get_time(5)
 def Play(Game):   
 
     x,y = Game.PlayerX, Game.PlayerY
@@ -211,7 +233,7 @@ def Partie():
         Affiche(CurrentGame)
         # rappelle la fonction Partie() dans 30ms
         # entre temps laisse l'OS réafficher l'interface
-        Window.after(1000,Partie) 
+        Window.after(GAME_SPEED, Partie) 
     else :
         AfficheScore(CurrentGame)
 
