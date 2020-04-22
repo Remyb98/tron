@@ -10,7 +10,7 @@ import levels as lvl
 #
 #   Données de partie
 
-RANDOM_LEVEL = 1
+RANDOM_LEVEL = 0
 
 if RANDOM_LEVEL:
     level = lvl.get_random_level()
@@ -123,28 +123,80 @@ def Moves_available(Game, x, y):
         pos_moves.append((0, 1))
     if Game.Grille[x, y - 1] == 0:
         pos_moves.append((0, -1))
-    print(pos_moves)
     return pos_moves
+
+
+
+def SimulationPartie(Game):
+    move_possible = []
+    while True :
+        move_possible = Moves_available(Game, Game.PlayerX, Game.PlayerY)
+        if len(move_possible) == 0 : #Si plus de coup possible on renvoit le score de la simulation
+            return Game.Score
+        Game = Play_simulation(Game, move_possible) #Sinon on continue à jouer 
+
+
+def MonteCarlo(Game, nbParties, study_move):
+    Total = 0
+    for i in range(0, nbParties):
+        Simulation_Game = Game.copy()
+        Simulation_Game.PlayerX += study_move[0] # On étudie les simulations à partir d'une position
+        Simulation_Game.PlayerY += study_move[1]
+        Simulation_Game.Score += 1 #On rajoute 1 car on a deja fait bouger l'IA une fois
+        Total += SimulationPartie(Simulation_Game) #On additionne les scores de toutes les simulations
+    return Total;
+
+
+def ChooseMov(Game, next_moves):
+    score_max = 0
+    nbParties = 100 #Nombre de simulation
+    best_move = ()
+    for move in next_moves : #On parcout tous les movements possibles
+        move_score = MonteCarlo(Game, nbParties, move) #On les étudie un à un 
+        if move_score > score_max : #Si le score est supérieur à celui actuel, alors on a trouvé un meilleur mouvement
+            score_max = move_score
+            best_move = move
+    return best_move
+
+
+#Modification de la position de l'IA
+def Actualise_game(Game, new_pos, x, y):
+    x += new_pos[0]
+    y += new_pos[1]
+    Game.PlayerX = x  # valide le déplacement
+    Game.PlayerY = y  # valide le déplacement
+    Game.Score += 1
+    return Game
 
 
 def Play(Game):   
 
     x,y = Game.PlayerX, Game.PlayerY
-    print(x,y)
+    #print(x,y)
 
     Game.Grille[x,y] = 2  # laisse la trace de la moto
 
     next_move = Moves_available(Game, x, y)
     if len(next_move):
-        new_pos =next_move[random.randrange(len(next_move))]
-        x += new_pos[0]
-        y += new_pos[1]
-        Game.PlayerX = x  # valide le déplacement
-        Game.PlayerY = y  # valide le déplacement
-        Game.Score += 1
+        new_pos = ChooseMov(Game, next_move)
+        Game = Actualise_game(Game, new_pos, x, y)
         return False  # la partie continue
     else:
         return True
+
+
+#Identique a Play à la différence qu'on choisit un mouvement au hasard parmis ceux possible
+def Play_simulation(Game, move_possible):   
+
+    x,y = Game.PlayerX, Game.PlayerY
+    #print(x,y)
+
+    Game.Grille[x,y] = 2  # laisse la trace de la moto
+
+
+    new_pos = move_possible[random.randrange(len(move_possible))]
+    Game = Actualise_game(Game, new_pos, x, y)
+    return Game
 
 ################################################################################
      
