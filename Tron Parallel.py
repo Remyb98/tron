@@ -1,10 +1,30 @@
 import time
 import numpy as np
-
+import copy
 import levels as lvl
 
-RANDOM_LEVEL = 0
-NUMBER_GAME = 5
+RANDOM_LEVEL = False
+NUMBER_GAME = 10000
+DEBUG = False
+
+import functools
+import time
+
+def get_time(accuracy=10):
+    """Decorateur pour connaitre le temps d execution
+    d une fonction
+    """
+    def decorator(function):
+        @functools.wraps(function)
+        def decorated(*args, **kwargs):
+            start = time.time()
+            value = function(*args, **kwargs)
+            timer = time.time() - start
+            timer *= 1000
+            print(f"function {function.__name__}:\t%.{accuracy}f seconds" % timer)
+            return value
+        return decorated
+    return decorator
 
 if RANDOM_LEVEL:
     level = lvl.get_random_level()
@@ -53,6 +73,7 @@ def display_grid(G, X, Y):
 
 # Liste des directions :
 # 0: sur place   1: à gauche  2 : en haut   3: à droite    4: en bas
+# Si impossible de bouger mettre en sur place
 
 dx = np.array([0, -1, 0, 1, 0], dtype=np.int8)
 dy = np.array([0, 0, 1, 0, -1], dtype=np.int8)
@@ -60,8 +81,66 @@ dy = np.array([0, 0, 1, 0, -1], dtype=np.int8)
 # Scores associés à chaque déplacement
 ds = np.array([0, 1, 1, 1, 1], dtype=np.int8)
 
-debug = True
+debug = DEBUG
 nb = NUMBER_GAME # Nombre de parties
+
+def push_zeros_back(array):
+    valid_mask = array != 0
+    flipped_mask = valid_mask.sum(1, keepdims=1) > np.arange(array.shape[1] - 1, -1, -1)
+    flipped_mask = flipped_mask[:, ::-1]
+    array[flipped_mask] = array[valid_mask]
+    array[~flipped_mask] = 0
+    return array
+
+# @get_time(5)
+def load_move_posibilities(G, X, Y, I):
+    all_posibilities = np.zeros((nb, 4), dtype=np.uint8)
+    indexes = np.zeros(nb, dtype=np.uint8)
+    list_of_directions = np.array([
+        G[I, X - 1, Y], # Gauche
+        G[I, X, Y + 1], # Haut
+        G[I, X + 1, Y], # Droite
+        G[I, X, Y - 1], # Bas
+    ], dtype=np.uint8)
+    for i, direction in enumerate(list_of_directions[:]):
+        all_posibilities[:, i] = (direction == 0) * (i + 1)
+    all_posibilities = push_zeros_back(all_posibilities) # On applique un masque pour decaler les 0
+    indexes = np.count_nonzero(all_posibilities, axis=1) # On compte les non null
+    indexes[indexes == 0] = 1
+    if debug:
+        [print(f"{i + 1} :\t{posibility} | {indexes[i]}") for i, posibility in enumerate(all_posibilities)]
+    return all_posibilities, indexes
+
+@get_time(5)
+def old_load_move_posibilities(G, X, Y, I):
+    all_posibilities = np.zeros((nb, 4), dtype=np.uint8)
+    indexes = np.zeros(nb, dtype=np.uint8)
+    list_of_directions = np.array([
+        G[I, X - 1, Y], # Gauche
+        G[I, X, Y + 1], # Haut
+        G[I, X + 1, Y], # Droite
+        G[I, X, Y - 1], # Bas
+    ], dtype=np.uint8)
+    for i, direction in enumerate(list_of_directions):
+        list_of_directions[i] = (direction == 0) * 1
+    list_of_directions = list_of_directions.transpose()
+    for i in range(nb):
+        for j in range(4):
+            if list_of_directions[i][j]:
+                all_posibilities[i][indexes[i]] = j + 1
+                indexes[i] += 1
+    indexes[indexes == 0] = 1
+    if debug:
+        [print(f"{i + 1} :\t{posibility} | {indexes[i]}") for i, posibility in enumerate(all_posibilities)]
+    return all_posibilities, indexes
+
+
+def get_random_choice(posibilities, indexes, I):
+    random_index = np.random.randint(12, size=nb)
+    random_index = random_index % indexes
+    if debug:
+        print(f"Indexes :\t{random_index}")
+    return posibilities[I, random_index]
 
 
 def simulate(game):
@@ -70,34 +149,45 @@ def simulate(game):
     X = np.tile(game.player_x, nb)
     Y = np.tile(game.player_y, nb)
     S = np.tile(game.score, nb)
-    I = np.arange(nb)  # 0, 1, 2, 3, 4, 5...
-    if debug: display_grid(G, X, Y)
+    I = np.arange(nb)
 
-    # VOTRE CODE ICI
+    old_score = 0
 
     while True:
-        if debug: print("X :\t", X)
-        if debug: print("Y :\t", Y)
-        if debug: print("S :\t", S)
+        if debug: print(f"X :\t{X}")
+        if debug: print(f"Y :\t{Y}")
+        if debug: print(f"S :\t{S}")
 
         # Marque le passage de la moto
         G[I, X, Y] = 2
 
-        # Direction : 2 = vers le haut
-        choice = np.ones(nb, dtype=np.uint8) * 2
+        available_moves, indexes = load_move_posibilities(G, X, Y, I)
+        choices = get_random_choice(available_moves, indexes, I)
 
-        # DEPLACEMENT
-        DX = dx[choice]
-        DY = dy[choice]
-        if debug: print("DX :\t", DX)
-        if debug: print("DY :\t", DY)
+        # Deplacement
+        DX = dx[choices]
+        DY = dy[choices]
+        if debug: print(f"DX :\t{DX}")
+        if debug: print(f"DY :\t{DY}")
         X += DX
         Y += DY
 
         # Debug
         if debug: display_grid(G, X, Y)
-        if debug: time.sleep(2)
+        if debug: input("Next...")
+        if debug: print(f"Moves :\t\t{choices}")
 
-        print("Scores :", np.mean(S))
+        # Increment du score
+        S += (choices != 0) * 1
+
+        # Fin des parties
+        new_score = np.sum(S)
+        if new_score == old_score:
+            print("End of simulation")
+            print(f"Min:\t{np.min(S)}\nMax:\t{np.max(S)}\nMoy:\t{np.mean(S)}\n")
+            return
+
+        old_score = new_score
+        # print("Scores :", np.mean(S))
 
 simulate(game_initial)
