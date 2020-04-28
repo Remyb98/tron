@@ -28,7 +28,7 @@ def get_time(accuracy=10):
 #
 #   Données de partie
 
-RANDOM_LEVEL = 0
+RANDOM_LEVEL = False
 GAME_SPEED = 50
 NUMBER_SIMULATION = 10000
 
@@ -167,13 +167,20 @@ def MonteCarlo(Game, nbParties, study_move):
         Total += SimulationPartie(Simulation_Game) #On additionne les scores de toutes les simulations
     return Total;
 
+def MonteCarloVect(Game, study_move):
+    simulation_game = Game.copy()
+    simulation_game.PlayerX += study_move[0]
+    simulation_game.PlayerY += study_move[1]
+    simulation_game.Score += 1
+    return simulate(simulation_game)
 
 def ChooseMov(Game, next_moves):
     score_max = 0
     nbParties = NUMBER_SIMULATION #Nombre de simulation
     best_move = ()
     for move in next_moves : #On parcout tous les movements possibles
-        move_score = MonteCarlo(Game, nbParties, move) #On les étudie un à un 
+        # move_score = MonteCarlo(Game, nbParties, move) #On les étudie un à un
+        move_score = MonteCarloVect(Game, move)
         if move_score > score_max : #Si le score est supérieur à celui actuel, alors on a trouvé un meilleur mouvement
             score_max = move_score
             best_move = move
@@ -219,6 +226,61 @@ def Play_simulation(Game, move_possible):
     new_pos = move_possible[random.randrange(len(move_possible))]
     Game = Actualise_game(Game, new_pos, x, y)
     return Game
+
+def simulate(game):
+    G = np.tile(game.Grille, (NUMBER_SIMULATION, 1, 1))
+    X = np.tile(game.PlayerX, NUMBER_SIMULATION)
+    Y = np.tile(game.PlayerY, NUMBER_SIMULATION)
+    S = np.tile(game.Score, NUMBER_SIMULATION)
+    I = np.arange(NUMBER_SIMULATION)
+    dx = np.array([0, -1, 0, 1, 0], dtype=np.int8)
+    dy = np.array([0, 0, 1, 0, -1], dtype=np.int8)
+    ds = np.array([0, 1, 1, 1, 1], dtype=np.int8)
+    old_score = 0
+    while True:
+        G[I, X, Y] = 2
+        available_moves, indexes = load_move_posibilities(G, X, Y, I)
+        choices = get_random_choice(available_moves, indexes, I)
+
+        DX = dx[choices]
+        DY = dy[choices]
+        X += DX
+        Y += DY
+        S += (choices != 0) * 1
+
+        new_score = np.sum(S)
+        if new_score == old_score:
+            return new_score
+        old_score = new_score
+
+def load_move_posibilities(G, X, Y, I):
+    all_posibilities = np.zeros((NUMBER_SIMULATION, 4), dtype=np.uint8)
+    indexes = np.zeros(NUMBER_SIMULATION, dtype=np.uint8)
+    list_of_directions = np.array([
+        G[I, X - 1, Y], # Gauche
+        G[I, X, Y + 1], # Haut
+        G[I, X + 1, Y], # Droite
+        G[I, X, Y - 1], # Bas
+    ], dtype=np.uint8)
+    for i, direction in enumerate(list_of_directions[:]):
+        all_posibilities[:, i] = (direction == 0) * (i + 1)
+    all_posibilities = push_zeros_back(all_posibilities) # On applique un masque pour decaler les 0
+    indexes = np.count_nonzero(all_posibilities, axis=1) # On compte les non null
+    indexes[indexes == 0] = 1
+    return all_posibilities, indexes
+
+def push_zeros_back(array):
+    valid_mask = array != 0
+    flipped_mask = valid_mask.sum(1, keepdims=1) > np.arange(array.shape[1] - 1, -1, -1)
+    flipped_mask = flipped_mask[:, ::-1]
+    array[flipped_mask] = array[valid_mask]
+    array[~flipped_mask] = 0
+    return array
+
+def get_random_choice(posibilities, indexes, I):
+    random_index = np.random.randint(12, size=NUMBER_SIMULATION)
+    random_index = random_index % indexes
+    return posibilities[I, random_index]
 
 ################################################################################
      
